@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from app.models import Jogo, Usuario, Partida, Mecanica
+from app.models import Jogo, Usuario, Partida, Mecanica, Avaliacao
 from app.schemas import (
     JogoCreate, UsuarioCreate, PartidaCreate, 
-    AddPrateleira, UsuarioRead, JogoRead
+    AddPrateleira, UsuarioRead, JogoRead, AvaliacaoCreate, JogoUpdate
 )
 from beanie import PydanticObjectId
 from beanie.operators import RegEx, GTE, In
@@ -35,6 +35,26 @@ async def listar_jogos(
         query = query.find(RegEx(Jogo.titulo, busca_titulo, "i"))
         
     return await query.sort(-Jogo.ano_lancamento).to_list()
+
+@router.put("/jogos/{id}")
+async def atualizar_jogo(id: str, dados: JogoUpdate):
+    jogo = await Jogo.get(PydanticObjectId(id))
+    if not jogo:
+        raise HTTPException(404, "Jogo não encontrado")
+    
+    update_data = dados.model_dump(exclude_unset=True)
+
+    await jogo.update({"$set": update_data})
+    return {"msg": "Jogo atualizado com sucesso", "dados": update_data}
+
+@router.delete("/jogos/{id}")
+async def deletar_jogo(id: str):
+    jogo = await Jogo.get(PydanticObjectId(id))
+    if not jogo:
+        raise HTTPException(404, "Jogo não encontrado")
+    
+    await jogo.delete()
+    return {"msg": "Jogo deletado com sucesso"}
 
 @router.post("/usuarios/", response_model=UsuarioRead)
 async def criar_usuario(dados: UsuarioCreate):
@@ -126,6 +146,53 @@ async def registrar_partida(dados: PartidaCreate):
     
     await partida.insert()
     return {"msg": "Partida registrada!", "id": str(partida.id)}
+
+@router.post("/avaliacoes/")
+async def avaliar_jogo(dados: AvaliacaoCreate):
+    usuario = await Usuario.get(PydanticObjectId(dados.usuario_id))
+    jogo = await Jogo.get(PydanticObjectId(dados.jogo_id))
+    
+    if not usuario or not jogo:
+        raise HTTPException(404, "Usuário ou Jogo não encontrado")
+    
+    nova_avaliacao = Avaliacao(
+        usuario=usuario,
+        jogo=jogo,
+        nota=dados.nota,
+        comentario=dados.comentario
+    )
+    
+    await nova_avaliacao.insert()
+    return {"msg": f"O jogo {jogo.titulo} recebeu nota {dados.nota}!"}
+
+@router.get("/relatorios/avaliacoes-jogo/{jogo_id}")
+async def relatorio_avaliacoes_jogo(jogo_id: str):
+
+    pipeline = [
+        {"$group": {
+            "_id": "$jogo.$id",
+            "media_notas": {"$avg": "$nota"},
+            "total_avaliacoes": {"$sum": 1}
+        }
+        },
+        {"$lookup": {
+            "from": "jogos",
+            "localField": "_id",
+            "foreignField": "_id",
+            "as": "detalhes_jogo"
+        }},
+        {"$project": {
+            "_id": 0,
+            "jogo": {"$arrayElemAt": ["$detalhes_jogo.titulo", 0]},
+            "media": {"$round": ["$media_notas", 1]}, 
+            "qtd_votos": "$total_avaliacoes"
+        }},
+        {"$sort": {"media": -1}}
+    ]
+
+    col = Avaliacao.get_pymongo_collection()
+    resultado = await col.aggregate(pipeline).to_list(length=None)
+    return resultado
 
 @router.get("/relatorios/jogos-populares")
 async def relatorio_agregacao():

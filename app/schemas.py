@@ -32,3 +32,15 @@ class UsuarioRead(BaseModel):
     nome: str 
     email: str
     pratileira: list[JogoRead] = []
+
+class JogoUpdate(BaseModel):
+    titulo: str | None = None
+    ano_lancamento: int | None = None
+    categoria: str | None = None
+    mecanicas: list[str] | None = None
+
+class AvaliacaoCreate(BaseModel):
+    usuario_id: str
+    jogo_id: str
+    nota: int 
+    comentario: str | None = None

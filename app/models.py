@@ -8,10 +8,6 @@ class Mecanica(BaseModel):
     descricao: str | None = None
 
 class Jogo(Document):
-    """
-    Coleção de Jogos.
-    Indexed() permite busca textual rápida.
-    """
     titulo: Annotated[str, Indexed()] 
     ano_lancamento: int
     categoria: str
@@ -21,9 +17,6 @@ class Jogo(Document):
         name = "jogos"
 
 class Usuario(Document):
-    """
-    Coleção de Usuários.
-    """
     nome: str
     email: Annotated[str, Indexed(unique=True)]
     
@@ -34,9 +27,6 @@ class Usuario(Document):
         name = "usuarios"
 
 class Partida(Document):
-    """
-    Coleção de Partidas (Logs).
-    """
     data: datetime = Field(default_factory=datetime.now)
     local: str | None = None
     
@@ -46,3 +36,12 @@ class Partida(Document):
     
     class Settings:
         name = "partidas"
+
+class Avaliacao(Document):
+    usuario: Link[Usuario]
+    jogo: Link[Jogo]
+    nota:int = Field(ge=1, le=5)
+    comentario: str | None = None
+
+    class Settings:
+        name = "avaliacoes"

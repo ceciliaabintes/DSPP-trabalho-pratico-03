@@ -1,7 +1,7 @@
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
-from app.models import Jogo, Usuario, Partida
+from app.models import Jogo, Usuario, Partida, Avaliacao
 
 async def init_mongo():
     mongo_url = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
@@ -11,7 +11,7 @@ async def init_mongo():
         client = AsyncIOMotorClient(mongo_url)
         await init_beanie(
             database=client[db_name],
-            document_models=[Jogo, Usuario, Partida]
+            document_models=[Jogo, Usuario, Partida, Avaliacao]
         )
         print(f"🔌 Beanie inicializado no banco: {db_name}")
     except Exception as e:
