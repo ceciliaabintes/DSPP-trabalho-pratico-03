@@ -93,9 +93,9 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "beanie", specifier = ">=2.0.1" },
+    { name = "beanie", specifier = ">=2.0" },
     { name = "fastapi", specifier = ">=0.128.0" },
-    { name = "motor", specifier = ">=3.7.1" },
+    { name = "motor", specifier = ">=3.6" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "uvicorn", specifier = ">=0.40.0" },

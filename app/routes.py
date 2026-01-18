@@ -1,14 +1,13 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from app.models import Jogo, Usuario, Partida, Mecanica
 from app.schemas import (
     JogoCreate, UsuarioCreate, PartidaCreate, 
-    AddPrateleira, UsuarioRead
+    AddPrateleira, UsuarioRead, JogoRead
 )
 from beanie import PydanticObjectId
-from beanie.operators import RegEx, GTE # Operadores do Mongo
+from beanie.operators import RegEx, GTE, In
 
 router = APIRouter()
-
 
 @router.post("/jogos/")
 async def criar_jogo(dados: JogoCreate):
@@ -44,7 +43,8 @@ async def criar_usuario(dados: UsuarioCreate):
     return UsuarioRead(
         id=str(novo_user.id), 
         nome=novo_user.nome, 
-        email=novo_user.email
+        email=novo_user.email,
+        prateleira=[]
     )
 
 @router.post("/usuarios/prateleira")
@@ -61,35 +61,74 @@ async def add_prateleira(dados: AddPrateleira):
 
 @router.get("/usuarios/{id}", response_model=UsuarioRead)
 async def obter_usuario(id: str):
-    user = await Usuario.find_one(Usuario.id == PydanticObjectId(id), fetch_links=True)
+    try:
+        user_id = PydanticObjectId(id)
+    except:
+        raise HTTPException(400, "ID inválido")
+
+    user = await Usuario.get(user_id)
     
     if not user:
         raise HTTPException(404, "Usuário não encontrado")
     
-    return user
+    ids_jogos = [link.ref.id for link in user.prateleira]
+    
+    jogos_completos = await Jogo.find(In(Jogo.id, ids_jogos)).to_list()
+
+    lista_jogos_read = [
+        JogoRead(
+            id=str(j.id),
+            titulo=j.titulo,
+            ano_lancamento=j.ano_lancamento,
+            categoria=j.categoria
+        )
+        for j in jogos_completos
+    ]
+    
+    return UsuarioRead(
+        id=str(user.id),
+        nome=user.nome,
+        email=user.email,
+        prateleira=lista_jogos_read
+    )
+
+@router.get("/usuarios/", response_model=list[UsuarioRead])
+async def listar_usuarios():
+    users = await Usuario.find_all().to_list()
+    resultado = []
+    for u in users:
+        resultado.append(
+            UsuarioRead(id=str(u.id), nome=u.nome, email=u.email, prateleira=[])
+        )
+    return resultado
 
 @router.post("/partidas/")
 async def registrar_partida(dados: PartidaCreate):
     jogo = await Jogo.get(PydanticObjectId(dados.jogo_id))
     if not jogo: raise HTTPException(404, "Jogo inexistente")
     
+    lista_ids = [PydanticObjectId(uid) for uid in dados.jogadores_ids]
+    jogadores_objs = await Usuario.find(In(Usuario.id, lista_ids)).to_list()
+    
+    if len(jogadores_objs) != len(lista_ids):
+        raise HTTPException(404, "Alguns jogadores não foram encontrados")
+
+    vencedor_obj = None
+    if dados.vencedor_id:
+        vencedor_obj = await Usuario.get(PydanticObjectId(dados.vencedor_id))
+
     partida = Partida(
         jogo=jogo,
-        jogadores=[PydanticObjectId(uid) for uid in dados.jogadores_ids],
+        jogadores=jogadores_objs,
+        vencedor=vencedor_obj,
         local=dados.local
     )
-    if dados.vencedor_id:
-        partida.vencedor = PydanticObjectId(dados.vencedor_id)
-        
+    
     await partida.insert()
-    return {"msg": "Partida registrada!"}
+    return {"msg": "Partida registrada!", "id": str(partida.id)}
 
 @router.get("/relatorios/jogos-populares")
 async def relatorio_agregacao():
-    """
-    Retorna a contagem de partidas por jogo.
-    Requisito (e): Agregações com Pipeline
-    """
     pipeline = [
         {"$group": {"_id": "$jogo.$id", "total": {"$sum": 1}}},
         {"$sort": {"total": -1}},
@@ -100,10 +139,12 @@ async def relatorio_agregacao():
             "as": "detalhes_jogo"
         }},
         {"$project": {
+            "_id": 0,
             "titulo_jogo": {"$arrayElemAt": ["$detalhes_jogo.titulo", 0]},
             "total_partidas": "$total"
         }}
     ]
     
-    resultado = await Partida.aggregate(pipeline).to_list()
+    col = Partida.get_pymongo_collection()
+    resultado = await col.aggregate(pipeline).to_list(length=None)
     return resultado
