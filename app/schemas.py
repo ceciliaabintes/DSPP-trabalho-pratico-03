@@ -15,12 +15,12 @@ class PartidaCreate(BaseModel):
     jogo_id: str 
     jogadores_ids: list[str] = []
     local: str | None = None
+    vencedor_id: str | None = None"
 
 class AddPrateleira(BaseModel):
-    usario_id: str 
+    usuario_id: str 
     jogo_id: str 
 
-# schemas de saída
 class JogoRead(BaseModel):
     id: str 
     titulo: str
