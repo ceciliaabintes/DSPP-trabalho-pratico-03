@@ -31,7 +31,7 @@ class UsuarioRead(BaseModel):
     id: str 
     nome: str 
     email: str
-    pratileira: list[JogoRead] = []
+    prateleira: list[JogoRead] = []
 
 class JogoUpdate(BaseModel):
     titulo: str | None = None

@@ -9,8 +9,8 @@ async def lifespan(app: FastAPI):
     yield
 
 app =  FastAPI(
-    title="Api para Avaliação de Board Games",
-    description="API desenvolvida para o trabalho prático 03 da disciplina DSPP",
+    title="API para Avaliação de Jogos de Tabuleiro",
+    description="API desenvolvida para gerenciar avaliações de jogos de tabuleiro.",
     version="3.0.0",
     lifespan=lifespan
 )

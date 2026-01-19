@@ -9,7 +9,7 @@ from beanie.operators import RegEx, GTE, In
 
 router = APIRouter()
 
-@router.post("/jogos/")
+@router.post("/jogos/", tags=["Jogos"])
 async def criar_jogo(dados: JogoCreate):
     mecs = [Mecanica(nome=m) for m in dados.mecanicas]
     novo_jogo = Jogo(
@@ -21,7 +21,7 @@ async def criar_jogo(dados: JogoCreate):
     await novo_jogo.insert()
     return novo_jogo
 
-@router.get("/jogos/")
+@router.get("/jogos/", tags=["Jogos"])
 async def listar_jogos(
     ano_minimo: int | None = None, 
     busca_titulo: str | None = None 
@@ -36,7 +36,7 @@ async def listar_jogos(
         
     return await query.sort(-Jogo.ano_lancamento).to_list()
 
-@router.put("/jogos/{id}")
+@router.put("/jogos/{id}", tags=["Jogos"])
 async def atualizar_jogo(id: str, dados: JogoUpdate):
     jogo = await Jogo.get(PydanticObjectId(id))
     if not jogo:
@@ -44,10 +44,15 @@ async def atualizar_jogo(id: str, dados: JogoUpdate):
     
     update_data = dados.model_dump(exclude_unset=True)
 
+    if "mecanicas" in update_data:
+        update_data["mecanicas"] = [
+            Mecanica(nome=m) for m in update_data["mecanicas"]
+        ]
+
     await jogo.update({"$set": update_data})
     return {"msg": "Jogo atualizado com sucesso", "dados": update_data}
 
-@router.delete("/jogos/{id}")
+@router.delete("/jogos/{id}", tags=["Jogos"])
 async def deletar_jogo(id: str):
     jogo = await Jogo.get(PydanticObjectId(id))
     if not jogo:
@@ -56,7 +61,7 @@ async def deletar_jogo(id: str):
     await jogo.delete()
     return {"msg": "Jogo deletado com sucesso"}
 
-@router.post("/usuarios/", response_model=UsuarioRead)
+@router.post("/usuarios/", response_model=UsuarioRead, tags=["Usuários"])
 async def criar_usuario(dados: UsuarioCreate):
     novo_user = Usuario(**dados.model_dump())
     await novo_user.insert()
@@ -67,7 +72,7 @@ async def criar_usuario(dados: UsuarioCreate):
         prateleira=[]
     )
 
-@router.post("/usuarios/prateleira")
+@router.post("/usuarios/prateleira", tags=["Usuários"])
 async def add_prateleira(dados: AddPrateleira):
     user = await Usuario.get(PydanticObjectId(dados.usuario_id))
     jogo = await Jogo.get(PydanticObjectId(dados.jogo_id))
@@ -79,7 +84,7 @@ async def add_prateleira(dados: AddPrateleira):
     await user.save()
     return {"msg": "Jogo adicionado à prateleira"}
 
-@router.get("/usuarios/{id}", response_model=UsuarioRead)
+@router.get("/usuarios/{id}", response_model=UsuarioRead,tags=["Usuários"])
 async def obter_usuario(id: str):
     try:
         user_id = PydanticObjectId(id)
@@ -112,7 +117,7 @@ async def obter_usuario(id: str):
         prateleira=lista_jogos_read
     )
 
-@router.get("/usuarios/", response_model=list[UsuarioRead])
+@router.get("/usuarios/", response_model=list[UsuarioRead], tags=["Usuários"])
 async def listar_usuarios():
     users = await Usuario.find_all().to_list()
     resultado = []
@@ -122,7 +127,7 @@ async def listar_usuarios():
         )
     return resultado
 
-@router.post("/partidas/")
+@router.post("/partidas/", tags=["Partidas"])
 async def registrar_partida(dados: PartidaCreate):
     jogo = await Jogo.get(PydanticObjectId(dados.jogo_id))
     if not jogo: raise HTTPException(404, "Jogo inexistente")
@@ -147,7 +152,7 @@ async def registrar_partida(dados: PartidaCreate):
     await partida.insert()
     return {"msg": "Partida registrada!", "id": str(partida.id)}
 
-@router.post("/avaliacoes/")
+@router.post("/avaliacoes/", tags=["Avaliações"])
 async def avaliar_jogo(dados: AvaliacaoCreate):
     usuario = await Usuario.get(PydanticObjectId(dados.usuario_id))
     jogo = await Jogo.get(PydanticObjectId(dados.jogo_id))
@@ -165,7 +170,7 @@ async def avaliar_jogo(dados: AvaliacaoCreate):
     await nova_avaliacao.insert()
     return {"msg": f"O jogo {jogo.titulo} recebeu nota {dados.nota}!"}
 
-@router.get("/relatorios/avaliacoes-jogo/{jogo_id}")
+@router.get("/relatorios/avaliacoes-jogo/{jogo_id}", tags=["Relatórios"])
 async def relatorio_avaliacoes_jogo(jogo_id: str):
 
     pipeline = [
@@ -194,7 +199,7 @@ async def relatorio_avaliacoes_jogo(jogo_id: str):
     resultado = await col.aggregate(pipeline).to_list(length=None)
     return resultado
 
-@router.get("/relatorios/jogos-populares")
+@router.get("/relatorios/jogos-populares", tags=["Relatórios"])
 async def relatorio_agregacao():
     pipeline = [
         {"$group": {"_id": "$jogo.$id", "total": {"$sum": 1}}},
