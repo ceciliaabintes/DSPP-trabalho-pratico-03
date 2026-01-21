@@ -13,7 +13,7 @@ async def init_mongo():
             database=client[db_name],
             document_models=[Jogo, Usuario, Partida, Avaliacao]
         )
-        print(f"🔌 Beanie inicializado no banco: {db_name}")
+        print(f" Beanie inicializado no banco: {db_name}")
     except Exception as e:
-        print(f"❌ Erro na conexão com Mongo: {e}")
+        print(f" Erro na conexão com Mongo: {e}")
         raise e
