@@ -1,0 +1,63 @@
+================================================================
+       DIVISÃO DE TRABALHO - SISTEMA DE JOGOS DE TABULEIRO
+================================================================
+DISCIPLINA: Desenvolvimento de Software para Persistência (DSPP)
+ALUNAS: Cecília & Letícia
+================================================================
+
+1. CECÍLIA
+----------------------------------------------------------------
+Responsável pela Infraestrutura, Lógica de Tratamento de Dados e 
+Relatórios Analíticos.
+
+ Configuração de Ambiente e Infraestrutura
+    - Criação do docker-compose.yml para o MongoDB.
+    - Configuração da conexão com o banco (database.py).
+
+ Desenvolvimento do CRUD de Jogos (Lógica Complexa)
+    - Implementação das rotas de criação, leitura, atualização e deleção.
+    - Desenvolvimento da lógica de conversão de Strings para Objetos 
+      na classe 'Mecanica' (tratamento de dados no PUT).
+    - Implementação de filtros de busca.
+
+ Automação de Testes (Seeder)
+    - Criação do script 'seeder.py' para povoamento automático do banco.
+    - Implementação de lógica de limpeza (reset) do banco antes dos testes.
+    - Geração de dados aleatórios para simulação de uso real.
+
+Relatórios Avançados (Agregações)
+    - Implementação dos pipelines de agregação do MongoDB.
+    - Relatório de "Jogos Populares" (Contagem de partidas).
+    - Relatório de "Média de Avaliações" (Cálculo estatístico e Join).
+
+2. LETÍCIA
+----------------------------------------------------------------
+Responsável pela Modelagem de Dados e 
+Funcionalidades de Interação do Usuário.
+ Modelagem de Dados (ODM - Beanie)
+    - Estruturação das classes no models.py (Jogo, Usuario, Partida, Avaliacao).
+    - Definição dos tipos de dados e relacionamentos (Links e DBRefs).
+    - Configuração de índices e validações de campo.
+
+ Definição de Contratos de API (Schemas)
+    - Criação das classes Pydantic no schemas.py.
+    - Separação entre modelos de Entrada (Create/Update) e Saída (Read).
+    - Validação de regras de negócio.
+
+ Funcionalidades de Usuário e Prateleira
+    - Implementação do CRUD de Usuários.
+    - Lógica de relacionamento "Prateleira": Adicionar jogos à lista 
+      pessoal do usuário (Gerenciamento de Links).
+    - Resolução do carregamento manual de referências no GET de usuários.
+
+ Registro de Partidas e Avaliações
+    - Implementação da lógica de registro de partidas (buscando objetos reais).
+    - Criação do sistema de Avaliações.
+    - Organização das Rotas no Swagger (Tags e documentação).
+
+3. TRABALHO CONJUNTO
+----------------------------------------------------------------
+- Debugging geral da aplicação.
+- Testes manuais de todas as rotas via Swagger UI.
+- Revisão de código e padronização.
+- Organização dos arquivos.
